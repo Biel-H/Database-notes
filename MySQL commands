@@ -8,7 +8,7 @@ labstack-mysql.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com
 ## remember that those address will not work in your enviroment, you have to use your own addresses. ##
 
 ## let's start seeing the user. 
-
+```MySQL
 sudo su -l ssm-user
 cd ~
 
