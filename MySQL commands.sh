@@ -1,13 +1,13 @@
 Hey! this my repository for MySQL commands for AWS CLI.
 
-# I will start hith my EC2 ARN and the Database endpoint to connect to the database and connect to the DB using the SSM (session manager) of the EC2.
+#I will start hith my EC2 ARN and the Database endpoint to connect to the database and connect to the DB using the SSM (session manager) of the EC2.
 
 arn:aws:secretsmanager:ap-southeast-1:787431072858:secret:secretMysqlMasterUser-Xr2GOQ
 labstack-mysql.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com
 
-## remember that those address will not work in your enviroment, you have to use your own addresses. ##
+##remember that those address will not work in your enviroment, you have to use your own addresses. ##
 
-## let's start seeing the user. 
+##let's start seeing the user. 
 
 sudo su -l ssm-user
 cd ~
@@ -62,17 +62,17 @@ cat << EoF > ~/generate_data.sql
 
 USE mylab;
 
-# Create a table to hold dummy data to export
+#Create a table to hold dummy data to export
 CREATE TABLE IF NOT EXISTS export_data (
   id int NOT NULL AUTO_INCREMENT,
   data VARCHAR (255) NOT NULL,
   PRIMARY KEY (id))
 ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-# Set delimiter so we can include semicolons in the procedure
+#Set delimiter so we can include semicolons in the procedure
 DELIMITER $$
 
-# Create procedure to insert dummy data
+#Create procedure to insert dummy data
 DROP PROCEDURE IF EXISTS generate_dummy_data;
 CREATE PROCEDURE generate_dummy_data()
 BEGIN
@@ -88,70 +88,70 @@ BEGIN
 END
 $$
 
-# Reset delimiter to default
+#Reset delimiter to default
 DELIMITER ;
 
-# Call the procedure we just created to insert 1000 rows of data in export_data
+#Call the procedure we just created to insert 1000 rows of data in export_data
 CALL generate_dummy_data();
 SELECT COUNT(*) AS 'Rows Inserted' FROM export_data;
 EoF
 
-# Run the script
+#Run the script
 cd ~
 mysql -h labstack-mysql.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com -u masteruser -p"$DBPASS" < generate_data.sql
 
-# View a sample of the data
+#View a sample of the data
 mysql -h labstack-mysql.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com -u masteruser -p"$DBPASS" -e"SELECT * FROM mylab.export_data LIMIT 20;"
 ```
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Do a count of the lines
+##Do a count of the lines
 
  SELECT
 	COUNT(*)
  FROM
 	mylab;
 
-## define a bucket to do the backup
+##define a bucket to do the backup
 
-# Define your s3 bucket
+#Define your s3 bucket
 S3Bucket=mysql-backups-lab-gabriel
 
-# Backup database with mysqldump
+#Backup database with mysqldump
 mysqldump -u masteruser -p"$DBPASS" -h$DBEndpoint --databases mylab --triggers --routines --events --single-transaction --set-gtid-purged=OFF --order-by-primary | gzip -1 | aws s3 cp - s3://$S3Bucket/backups/mylabbackup.sql.gz
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## View tables within the 'exemple1' database
 mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS" -e"USE mylab; show tables;"
 
-# Now if you make the backup of your database and are using another one (copy)
+#Now if you make the backup of your database and are using another one (copy)
 
-# Define your restore database endpoint
+#Define your restore database endpoint
 DBEndpoint=lab-mysql-restore-gabriel.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com
 
-# View version and show databases
+#View version and show databases
 mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS" -e"SELECT @@version; show databases;"
 
-# Define your restored database endpoint
+#Define your restored database endpoint
 DBEndpoint=lab-mysql-restore-gabriel.cilnlheunfm3.ap-southeast-1.rds.amazonaws.com
 
 
-# Define your s3 bucket 
+#Define your s3 bucket 
 S3Bucket=mysql-backups-lab-gabriel
 
-# Restore database file we created earlier with mysqldump
+#Restore database file we created earlier with mysqldump
  aws s3 cp s3://$S3Bucket/backups/mylabbackup.sql.gz - | gzip -d | mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS"
 
-# Verify the export_data table was restored and count the number of rows in the table
+#Verify the export_data table was restored and count the number of rows in the table
 mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS" -e"USE mylab; show tables; SELECT COUNT(*) AS 'Total rows in export_data table' FROM export_data;"
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Get the row count of the export_data table and the current time
+#Get the row count of the export_data table and the current time
 mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS" -e"USE mylab; SELECT COUNT(*) AS 'Total rows in export_data table' FROM export_data; SELECT NOW() AS 'Current Time in UTC';"
 
 
-# Get the row count of the export_data table
+#Get the row count of the export_data table
 mysql -h$DBEndpoint -u$DBUSER -p"$DBPASS" -e"USE mylab; SELECT COUNT(*) AS 'Total rows in export_data table' FROM export_data;"
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
