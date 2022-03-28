@@ -87,10 +87,10 @@ BEGIN
   END WHILE;
 END
 $$
-
+'
 #Reset delimiter to default
 DELIMITER ;
-
+'
 #Call the procedure we just created to insert 1000 rows of data in export_data
 CALL generate_dummy_data();
 SELECT COUNT(*) AS 'Rows Inserted' FROM export_data;
